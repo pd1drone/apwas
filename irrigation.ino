@@ -36,6 +36,7 @@ float GradualDecreaseOfWater;
 float TotalVolume = 13273.23;
 
 float CurrentVolume;
+bool isValveOpen = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -62,26 +63,26 @@ void loop() {
   
 
   SoilMoisture1 = floatMap(analogRead(A0), 0, 1023, 100, 0);
-  Serial.print("SoilMoisture1: ");
-  Serial.print(SoilMoisture1);
-  Serial.println("%");
+  lcd.print("SoilMoisture1: ");
+  lcd.print(SoilMoisture1);
+  lcd.println("%");
 
   SoilMoisture2 = floatMap(analogRead(A1), 0, 1023, 100, 0);
-  Serial.print("SoilMoisture2: ");
-  Serial.print(SoilMoisture2);
-  Serial.println("%");
+  lcd.print("SoilMoisture2: ");
+  lcd.print(SoilMoisture2);
+  lcd.println("%");
 
   AverageSoilMoisture = (SoilMoisture1 + SoilMoisture2)/2;
   
-  Serial.print("Average SoilMoisture: ");
-  Serial.print(AverageSoilMoisture);
-  Serial.println("%");
+  lcd.print("Average SoilMoisture: ");
+  lcd.print(AverageSoilMoisture);
+  lcd.println("%");
 
   int dist = sonar.ping_cm();
-  if (dist ==0 || dist >=200){
-    dist = 30;
+  if (dist ==0 || dist >=25){
+    dist = 25;
   }
-  CurrentVolume = 23*12*(52-dist);
+  CurrentVolume = 13*13*PI*(50-dist);
   Serial.print("Current Volume: ");
   Serial.print(CurrentVolume);
   Serial.println("ml");
@@ -100,6 +101,7 @@ void loop() {
     digitalWrite(relayPin, HIGH); 
   }else{
     digitalWrite(relayPin, LOW);
+    isValveOpen = true;
     delay(10000);
     digitalWrite(relayPin,HIGH);
   }
@@ -145,22 +147,28 @@ void receiveEvent(int howMany) {
 // function that executes whenever data is requested from master
 void requestEvent() {
 
-    
+    if (isValveOpen){
+      Wire.write("Z");
+      Serial.println("Send Data that Valve is open");
+      isValveOpen = false;
+    }
 
     String volstr = "V"+String(CurrentVolume,2);
-    if (volstr==""){
-      Wire.write("V6000.00");  /*send string on request */
-    }else{
-      Wire.write(volstr.c_str());  /*send string on request */
-    }
+    
+    Wire.write(volstr.c_str());  /*send string on request */
+    
     float soil =  AverageSoilMoisture;
     String soilstr = "M"+String(AverageSoilMoisture,2)+"E";
     Wire.write(soilstr.c_str());  /*send string on request */
+
 
     Serial.println(volstr.c_str());
     Serial.println(CurrentVolume);
     Serial.println(soilstr.c_str());
     Serial.println(AverageSoilMoisture);
+
+
+    
 
 }
 
